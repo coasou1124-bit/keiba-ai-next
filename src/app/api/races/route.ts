@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { NextResponse } from 'next/server'
 import { getMockRaces } from '@/services/jravan/mock'
 import { getMockAiComment } from '@/services/ai/mock'
