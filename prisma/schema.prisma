@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Bet {
+  id             String   @id @default(cuid())
+  date           String
+  venue          String
+  raceNumber     Int
+  raceName       String
+  betType        String
+  horses         String
+  odds           Float
+  stake          Int
+  evScore        Float    @default(0)
+  aiScore        Float
+  aiComment      String
+  isHit          Boolean?
+  payout         Int      @default(0)
+  profit         Int      @default(0)
+  resultPosition Int      @default(0)
+  memo           String   @default("")
+  raceId         String   @default("")
+  isValueBet     Boolean  @default(false)
+  marketLabel    String   @default("")
+  surface        String   @default("")
+  trackCondition String   @default("")
+  popularity     Int      @default(0)
+  aiRank         Int      @default(0)
+  paceType       String   @default("")
+  runningStyle   String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ImportedRace {
+  id             String          @id @default(cuid())
+  raceDate       String
+  racecourse     String
+  raceNumber     Int
+  raceName       String
+  surface        String
+  distance       Int
+  weather        String          @default("")
+  trackCondition String
+  raceGrade      String          @default("")
+  importedAt     DateTime        @default(now())
+  horses         ImportedHorse[]
+}
+
+model ImportedHorse {
+  id            String       @id @default(cuid())
+  raceId        String
+  race          ImportedRace @relation(fields: [raceId], references: [id], onDelete: Cascade)
+  horseName     String
+  frameNumber   Int
+  horseNumber   Int
+  popularity    Int
+  odds          Float
+  runningStyle  String
+  finalPosition Int          @default(0)
+  jockeyName    String       @default("")
+  weightCarried Float        @default(0)
+  horseSex      String       @default("")
+  horseAge      Int          @default(0)
+}

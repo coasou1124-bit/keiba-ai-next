@@ -1,0 +1,204 @@
+  ▲ Next.js 14.2.5
+  - Local:        http://localhost:3001
+  - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 1281ms
+ ○ Compiling / ...
+ ✓ Compiled / in 895ms (503 modules)
+ GET / 200 in 997ms
+ ✓ Compiled in 100ms (258 modules)
+ ✓ Compiled /api/race-comment in 172ms (276 modules)
+ POST /api/race-comment 400 in 220ms
+ POST /api/race-comment 200 in 7ms
+ POST /api/race-comment 400 in 4ms
+ ✓ Compiled /api/import in 125ms (59 modules)
+ GET /api/import 200 in 172ms
+ ✓ Compiled /api/races in 34ms (69 modules)
+ GET /api/races 200 in 59ms
+ ✓ Compiled / in 45ms (291 modules)
+ GET / 200 in 114ms
+ ✓ Compiled /results in 206ms (541 modules)
+ GET /results 200 in 304ms
+ ○ Compiling /stats ...
+ ✓ Compiled /stats in 1508ms (1537 modules)
+ GET /stats 200 in 1620ms
+ ✓ Compiled /import in 168ms (1545 modules)
+ GET /import 200 in 252ms
+ ✓ Compiled in 223ms (761 modules)
+ ✓ Compiled in 113ms (761 modules)
+ ✓ Compiled in 256ms (761 modules)
+ ✓ Compiled in 150ms (761 modules)
+ ✓ Compiled in 131ms (761 modules)
+ ✓ Compiled in 166ms (761 modules)
+ ✓ Compiled in 122ms (761 modules)
+ ✓ Compiled in 118ms (761 modules)
+ ✓ Compiled /api/races in 110ms (64 modules)
+ GET /api/races 200 in 149ms
+ GET /api/races 200 in 7ms
+ GET /api/races 200 in 7ms
+ GET /api/races 200 in 7ms
+ ✓ Compiled / in 144ms (286 modules)
+ GET / 200 in 230ms
+ ✓ Compiled /results in 117ms (290 modules)
+ GET /results 200 in 211ms
+ ✓ Compiled /stats in 202ms (788 modules)
+ GET /stats 200 in 323ms
+ ✓ Compiled /import in 57ms (793 modules)
+ GET /import 200 in 142ms
+ GET /api/races 200 in 21ms
+ GET /api/races 200 in 7ms
+ GET / 200 in 71ms
+ ✓ Compiled /_not-found in 201ms (1054 modules)
+ GET /results 404 in 304ms
+ ✓ Compiled /stats in 65ms (789 modules)
+ GET /stats 200 in 133ms
+ ✓ Compiled /import in 59ms (794 modules)
+ GET /import 200 in 96ms
+ GET /results 200 in 52ms
+ ✓ Compiled /api/bets in 154ms (785 modules)
+ POST /api/bets 201 in 205ms
+ ⚠ Found a change in next.config.js. Restarting the server to apply the changes...
+  ▲ Next.js 14.2.5
+  - Local:        http://localhost:3001
+  - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 1354ms
+ ✓ Compiled /api/learning in 244ms (56 modules)
+ GET /api/learning 200 in 320ms
+ ✓ Compiled /api/races in 95ms (67 modules)
+ GET /api/races 200 in 125ms
+ ○ Compiling / ...
+ ✓ Compiled / in 1421ms (547 modules)
+ GET / 200 in 1501ms
+ ✓ Compiled in 89ms (258 modules)
+ ○ Compiling /stats ...
+ ✓ Compiled /stats in 1424ms (1529 modules)
+ GET /stats 200 in 1530ms
+ ✓ Compiled /results in 130ms (1535 modules)
+ GET /results 200 in 212ms
+ ✓ Compiled /import in 148ms (1543 modules)
+ GET /import 200 in 212ms
+ ✓ Compiled /api/bets in 75ms (784 modules)
+ POST /api/bets 201 in 105ms
+ POST /api/bets 201 in 11ms
+ POST /api/bets 201 in 11ms
+ POST /api/bets 201 in 10ms
+ POST /api/bets 201 in 10ms
+ POST /api/bets 201 in 10ms
+ POST /api/bets 201 in 10ms
+ POST /api/bets 201 in 9ms
+ POST /api/bets 201 in 9ms
+ POST /api/bets 201 in 15ms
+ ✓ Compiled /api/learning in 58ms (787 modules)
+ GET /api/learning 200 in 84ms
+ GET /api/bets 200 in 6ms
+ GET /api/bets 200 in 5ms
+ GET /api/bets 200 in 5ms
+ ✓ Compiled /api/bets/[id] in 32ms (60 modules)
+ PATCH /api/bets/cmp499qot0009ss7alxgkse0r 200 in 1046ms
+ PATCH /api/bets/cmp499qoa0008ss7awsx0hzs0 200 in 683ms
+ PATCH /api/bets/cmp499qnr0007ss7a2isiskia 200 in 10ms
+ PATCH /api/bets/cmp499qna0006ss7azahokg1x 200 in 10ms
+ PATCH /api/bets/cmp499qmp0005ss7atmjr9pps 200 in 11ms
+ PATCH /api/bets/cmp499qlv0004ss7ahyfxdxe3 200 in 10ms
+ PATCH /api/bets/cmp499qlc0003ss7atdbg6n7t 200 in 16ms
+ PATCH /api/bets/cmp499qks0002ss7abyp89opd 200 in 9ms
+ PATCH /api/bets/cmp499qk70001ss7a3tsfijxw 200 in 11ms
+ PATCH /api/bets/cmp499qjg0000ss7ajbwe84u9 200 in 10ms
+ GET /api/learning 200 in 6ms
+ ✓ Compiled /api/races in 16ms (71 modules)
+ GET /api/races 200 in 37ms
+ GET /api/learning 200 in 6ms
+ GET /api/races 200 in 8ms
+ ✓ Compiled /api/stats in 34ms (69 modules)
+ GET /api/stats 200 in 46ms
+ ✓ Compiled / in 36ms (291 modules)
+ GET / 200 in 95ms
+ ✓ Compiled /stats in 65ms (789 modules)
+ GET /stats 200 in 159ms
+ ✓ Compiled /results in 56ms (793 modules)
+ GET /results 200 in 132ms
+ ✓ Compiled /import in 57ms (798 modules)
+ GET /import 200 in 120ms
+ GET /api/learning 200 in 8ms
+ GET / 200 in 65ms
+ GET /stats 200 in 27ms
+ GET /results 200 in 19ms
+ GET /import 200 in 58ms
+ GET /api/races 200 in 8ms
+   Reload env: .env
+ ✓ Compiled in 208ms (761 modules)
+ ✓ Compiled in 103ms (761 modules)
+ ✓ Compiled in 64ms (747 modules)
+ ✓ Compiled in 112ms (761 modules)
+ ✓ Compiled in 57ms (747 modules)
+ ✓ Compiled in 78ms (761 modules)
+ ✓ Compiled in 82ms (761 modules)
+ ✓ Compiled in 83ms (761 modules)
+ ✓ Compiled in 127ms (761 modules)
+ ✓ Compiled in 62ms (747 modules)
+ ✓ Compiled in 88ms (761 modules)
+ ✓ Compiled in 78ms (761 modules)
+ ✓ Compiled in 87ms (761 modules)
+ ✓ Compiled in 56ms (747 modules)
+ ✓ Compiled in 106ms (761 modules)
+ ✓ Compiled in 95ms (747 modules)
+ ✓ Compiled /api/n8n/races in 30ms (54 modules)
+ ✓ Compiled /api/races in 14ms (68 modules)
+ GET /api/races 200 in 36ms
+ GET /api/n8n/races 200 in 98ms
+ ✓ Compiled /api/n8n/picks in 29ms (70 modules)
+ GET /api/races 200 in 12ms
+ GET /api/n8n/picks 200 in 53ms
+ ✓ Compiled /api/n8n/stats in 26ms (72 modules)
+ ✓ Compiled /api/stats in 16ms (74 modules)
+ GET /api/stats 200 in 28ms
+ GET /api/n8n/stats 200 in 64ms
+ ✓ Compiled /api/n8n/bets in 32ms (76 modules)
+ POST /api/n8n/bets 201 in 53ms
+ ✓ Compiled /api/n8n/bets/[id] in 35ms (78 modules)
+ PATCH /api/n8n/bets/cmp4ke9e2000ass7asxg1n71a 200 in 1029ms
+ ✓ Compiled /api/n8n/import in 25ms (60 modules)
+ ✓ Compiled /api/import in 40ms (63 modules)
+ POST /api/import 200 in 79ms
+ POST /api/n8n/import 200 in 118ms
+ ✓ Compiled /api/n8n/races in 16ms (65 modules)
+ GET /api/n8n/races 401 in 26ms
+ ✓ Compiled /n8n in 190ms (1050 modules)
+ GET /n8n 200 in 298ms
+ ✓ Compiled /api/n8n/stats in 31ms (289 modules)
+ ✓ Compiled /api/stats in 33ms (291 modules)
+ GET /api/stats 200 in 50ms
+ GET /api/n8n/stats 200 in 102ms
+ GET /api/n8n/stats 401 in 4ms
+ ✓ Compiled in 158ms (1050 modules)
+ ✓ Compiled / in 31ms (245 modules)
+ GET / 200 in 125ms
+ ✓ Compiled /stats in 84ms (743 modules)
+ GET /stats 200 in 180ms
+ ✓ Compiled /results in 55ms (747 modules)
+ GET /results 200 in 145ms
+ ✓ Compiled /import in 50ms (752 modules)
+ GET /import 200 in 130ms
+ ✓ Compiled /n8n in 53ms (756 modules)
+ GET /n8n 200 in 132ms
+ GET /n8n 200 in 68ms
+ ✓ Compiled /api/n8n/races in 50ms (276 modules)
+ ✓ Compiled /api/races in 29ms (290 modules)
+ GET /api/races 200 in 54ms
+ GET /api/n8n/races 200 in 149ms
+ GET /api/n8n/races 401 in 5ms
+ GET /api/n8n/races 401 in 5ms
+ ✓ Compiled /api/n8n/picks in 18ms (70 modules)
+ GET /api/races 200 in 12ms
+ GET /api/n8n/picks 200 in 52ms
+ GET /api/races 200 in 7ms
+ GET /api/n8n/picks 200 in 13ms
+ GET /api/races 200 in 6ms
+ GET /api/n8n/picks?raceId=csv-2024-05-26-??-11 200 in 12ms
+ ✓ Compiled /api/n8n/bets in 15ms (72 modules)
+ POST /api/n8n/bets 201 in 33ms
+ ✓ Compiled /api/n8n/bets/[id] in 21ms (74 modules)
+ PATCH /api/n8n/bets/cmp4kryc5000fss7a2eegwscb 200 in 822ms
