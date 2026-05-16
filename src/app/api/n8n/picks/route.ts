@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { checkN8nAuth, unauthorizedResponse } from '@/lib/n8nAuth'
 
