@@ -5,6 +5,7 @@ import { getMockRaces } from '@/services/jravan/mock'
 import { getMockAiComment } from '@/services/ai/mock'
 import { enrichHorses, generatePicks, calcRaceScoreWithContext, buildMarketDivergenceResult } from '@/lib/calculator'
 import { optimizeBets } from '@/lib/betOptimizer'
+import { buildAiRecommendation } from '@/lib/aiRecommender'
 import { computeLearningModel } from '@/lib/learningModel'
 import type { LearningBetInput } from '@/lib/learningModel'
 import type { LearningModel } from '@/types'
@@ -122,11 +123,12 @@ function buildRaces(rawRaces: RawRace[], learningModel: LearningModel, learningS
       trackCondition: raw.trackCondition,
       learningModel,
     })
+    const aiRecommendation = buildAiRecommendation(horses)
     return {
       ...raceBase, picks, aiComment, overallEvScore,
       courseFeature, pacePrediction,
       trackCondition: raw.trackCondition, trackConditionResult, gateTendencyResult, marketDivergenceResult,
-      optimizedBets,
+      optimizedBets, aiRecommendation,
     }
   })
 }

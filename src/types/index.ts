@@ -136,6 +136,7 @@ export interface Race {
   gateTendencyResult?: GateTendencyResult
   marketDivergenceResult?: MarketDivergenceResult
   optimizedBets?: OptimizedBet[]
+  aiRecommendation?: AiRecommendation
 }
 
 export interface OptimizedBet {
@@ -237,4 +238,38 @@ export interface LearningModel {
   totalSamples: number
   isInsufficient: boolean
   updatedAt: string
+}
+
+export type HorseRole = '本命' | '対抗' | '穴馬' | '危険人気馬'
+
+export interface RoleHorse {
+  name: string
+  role: HorseRole
+  aiScore: number
+  rawAiScore: number
+  aiScoreBonus: number
+  aiScoreBonusReason: string
+  popularity: number
+  winOdds: number
+  marketLabel: MarketLabel
+  divergenceScore: number
+  evScore: number
+  winRate: number
+  reasons: string[]
+}
+
+export interface AiRecBet {
+  betType: BetType
+  horses: string[]
+  odds: number
+  evScore: number
+  expectedRoi: number
+  signal: 'buy' | 'pass'
+  reason: string
+}
+
+export interface AiRecommendation {
+  roles: RoleHorse[]
+  bets: AiRecBet[]
+  summary: string
 }
