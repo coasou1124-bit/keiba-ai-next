@@ -18,3 +18,8 @@ prisma/dev.db-journal
 # OS
 .DS_Store
 Thumbs.db
+
+# CSV自動取り込みフォルダ（CSVファイル自体はコミットしない）
+watch-import/*.csv
+imported/*.csv
+error/*.csv
