@@ -53,6 +53,39 @@ type PaceType = 'ハイペース' | 'ミドルペース' | 'スローペース'
 type TrackCondition = '良' | '稍重' | '重' | '不良'
 type GateBias = '内有利' | '外有利' | 'フラット'
 type MarketLabel = '過小評価' | '妙味あり' | '危険人気馬' | '本命候補' | '標準'
+type HorseRole = '本命' | '対抗' | '穴馬' | '危険人気馬'
+
+interface RoleHorse {
+  name: string
+  role: HorseRole
+  aiScore: number
+  rawAiScore: number
+  aiScoreBonus: number
+  aiScoreBonusReason: string
+  popularity: number
+  winOdds: number
+  marketLabel: MarketLabel
+  divergenceScore: number
+  evScore: number
+  winRate: number
+  reasons: string[]
+}
+
+interface AiRecBet {
+  betType: string
+  horses: string[]
+  odds: number
+  evScore: number
+  expectedRoi: number
+  signal: 'buy' | 'pass'
+  reason: string
+}
+
+interface AiRecommendation {
+  roles: RoleHorse[]
+  bets: AiRecBet[]
+  summary: string
+}
 
 interface TrackConditionResult {
   condition: TrackCondition
@@ -126,6 +159,7 @@ interface Race {
   gateTendencyResult?: GateTendencyResult
   marketDivergenceResult?: MarketDivergenceResult
   optimizedBets?: OptimizedBet[]
+  aiRecommendation?: AiRecommendation
 }
 
 // ---- BetForm 状態 ----
@@ -934,6 +968,221 @@ function AiCorrectionPanel({ horses }: { horses: Horse[] }) {
   )
 }
 
+// ---- AIおすすめ買い目パネル ----
+const AI_REC_ROLE_CONFIG: Record<HorseRole, { icon: string; border: string; bg: string; badge: string }> = {
+  '本命':     { icon: '★', border: 'border-amber-500/35',  bg: 'bg-amber-500/8',  badge: 'text-amber-300 bg-amber-400/15 border-amber-400/40' },
+  '対抗':     { icon: '◎', border: 'border-sky-500/35',    bg: 'bg-sky-500/8',    badge: 'text-sky-300 bg-sky-400/15 border-sky-400/40' },
+  '穴馬':     { icon: '◆', border: 'border-violet-500/35', bg: 'bg-violet-500/8', badge: 'text-violet-300 bg-violet-400/15 border-violet-400/40' },
+  '危険人気馬': { icon: '✕', border: 'border-red-500/35',   bg: 'bg-red-500/5',    badge: 'text-red-300 bg-red-400/15 border-red-400/40' },
+}
+
+function RoleHorseCard({ horse }: { horse: RoleHorse }) {
+  const [open, setOpen] = useState(false)
+  const cfg = AI_REC_ROLE_CONFIG[horse.role]
+  const isDanger = horse.role === '危険人気馬'
+  const hasCorrn = horse.aiScoreBonus !== 0
+
+  return (
+    <div className={`border rounded-xl px-3 py-2 ${cfg.border} ${cfg.bg}`}>
+      {/* ロール + 馬名 */}
+      <div className="flex items-center gap-1.5 mb-1.5 min-w-0">
+        <span className={`text-[10px] font-bold border px-1.5 py-0.5 rounded flex-shrink-0 ${cfg.badge}`}>
+          {cfg.icon} {horse.role}
+        </span>
+        <span className={`font-bold text-sm truncate ${isDanger ? 'text-red-300/70 line-through' : 'text-white/90'}`}>
+          {horse.name}
+        </span>
+      </div>
+
+      {/* スコア行 */}
+      <div className="flex items-center gap-2 text-xs flex-wrap">
+        {/* AIスコア（補正値付き） */}
+        <span className={`font-bold ${horse.aiScore >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          AI{horse.aiScore >= 0 ? '+' : ''}{horse.aiScore}
+        </span>
+        {hasCorrn && (
+          <span className={`text-[10px] ${horse.aiScoreBonus > 0 ? 'text-green-400/65' : 'text-red-400/65'}`}>
+            ({horse.aiScoreBonus > 0 ? '+' : ''}{horse.aiScoreBonus})
+          </span>
+        )}
+        {/* 人気 / オッズ */}
+        <span className="text-white/40">{horse.popularity}人気</span>
+        <span className="text-white/65 font-medium">{horse.winOdds}倍</span>
+        {/* EV */}
+        <span className={`font-bold ${horse.evScore >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          EV{horse.evScore >= 0 ? '+' : ''}{horse.evScore}
+        </span>
+        {/* 乖離 */}
+        <span className={`text-[10px] ${horse.divergenceScore >= 2 ? 'text-green-400/70' : horse.divergenceScore <= -2 ? 'text-red-400/70' : 'text-white/25'}`}>
+          乖離{horse.divergenceScore >= 0 ? '+' : ''}{horse.divergenceScore}
+        </span>
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="ml-auto text-[10px] text-white/25 hover:text-white/50 transition-colors"
+        >
+          {open ? '閉じる' : '詳細▾'}
+        </button>
+      </div>
+
+      {/* 展開: 推奨理由 */}
+      {open && (
+        <div className="mt-2 pt-2 border-t border-white/10 space-y-0.5">
+          {horse.reasons.map((r, i) => (
+            <p key={i} className="text-white/40 text-[11px] leading-relaxed">{r}</p>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AiRecBetRow({ bet, race, onRecorded }: { bet: AiRecBet; race: Race; onRecorded: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const isBuy = bet.signal === 'buy'
+  const roiColor = bet.expectedRoi >= 100 ? 'text-green-400' : bet.expectedRoi >= 80 ? 'text-yellow-400' : 'text-white/40'
+
+  async function handleRecord() {
+    setSubmitting(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/bets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          raceId: race.id,
+          date: race.date,
+          venue: race.venue,
+          raceNumber: race.raceNumber,
+          raceName: race.raceName,
+          betType: bet.betType,
+          horses: bet.horses,
+          odds: bet.odds,
+          amount: 1000,
+          aiScore: bet.evScore,
+          evScore: bet.evScore,
+          aiComment: bet.reason,
+          surface: race.surface ?? '',
+          trackCondition: race.trackCondition ?? '',
+          paceType: race.pacePrediction?.pace ?? '',
+          popularity: race.marketDivergenceResult?.allHorses.find(h => h.name === bet.horses[0])?.popularity ?? 0,
+          aiRank: race.marketDivergenceResult?.allHorses.find(h => h.name === bet.horses[0])?.aiRank ?? 0,
+          isValueBet: isBuy,
+          marketLabel: race.marketDivergenceResult?.allHorses.find(h => h.name === bet.horses[0])?.marketLabel ?? '',
+          runningStyle: race.horses?.find(h => h.name === bet.horses[0])?.style ?? '',
+        }),
+      })
+      if (!res.ok) throw new Error('記録に失敗しました')
+      setSubmitted(true)
+      onRecorded()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '記録に失敗しました')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className={`border rounded-xl overflow-hidden ${isBuy ? 'border-green-500/25 bg-green-500/5' : 'border-white/8'}`}>
+      {/* メイン行 */}
+      <div className="px-3 py-2 flex items-center gap-2 flex-wrap">
+        <span className="text-xs font-medium bg-white/10 text-white/70 px-2 py-0.5 rounded flex-shrink-0">
+          {bet.betType}
+        </span>
+        <span className="text-white/90 text-sm font-medium flex-1 min-w-0 truncate">
+          {bet.horses.join(' × ')}
+        </span>
+        <span className="text-white/40 text-xs flex-shrink-0">{bet.odds.toFixed(1)}倍</span>
+        <span className={`text-xs font-bold flex-shrink-0 ${roiColor}`}>
+          回収{bet.expectedRoi}%
+        </span>
+        <span className={`text-xs font-bold flex-shrink-0 ${bet.evScore >= 0 ? 'text-green-400' : 'text-white/40'}`}>
+          EV{bet.evScore >= 0 ? '+' : ''}{bet.evScore}
+        </span>
+        <span className={`text-xs font-bold flex-shrink-0 ${isBuy ? 'text-green-400' : 'text-red-400'}`}>
+          {isBuy ? '▲買い' : '▼見送'}
+        </span>
+        {!submitted ? (
+          <button
+            onClick={() => setOpen(o => !o)}
+            className="text-[10px] text-white/30 hover:text-white/60 border border-white/15 rounded px-2 py-0.5 transition-colors flex-shrink-0"
+          >
+            {open ? '閉' : '記録'}
+          </button>
+        ) : (
+          <span className="text-green-400 text-xs font-bold flex-shrink-0">✓</span>
+        )}
+      </div>
+
+      {/* 推奨理由 */}
+      <p className="text-white/35 text-[11px] leading-relaxed px-3 pb-2">{bet.reason}</p>
+
+      {/* 記録フォーム */}
+      {open && !submitted && (
+        <div className="px-3 pb-2.5 pt-1.5 border-t border-white/5 flex items-center gap-2 flex-wrap">
+          <span className="text-white/35 text-xs">¥1,000 で記録</span>
+          <button
+            onClick={handleRecord}
+            disabled={submitting}
+            className="bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg px-3 py-1 text-xs font-bold hover:bg-amber-500/30 transition-colors disabled:opacity-50"
+          >
+            {submitting ? '記録中...' : '保存する'}
+          </button>
+          {error && <span className="text-red-400 text-xs">{error}</span>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AiRecommendationPanel({ rec, race, onRecorded }: { rec: AiRecommendation; race: Race; onRecorded: () => void }) {
+  const buyCount = rec.bets.filter(b => b.signal === 'buy').length
+
+  return (
+    <div className="border border-amber-500/20 rounded-xl overflow-hidden mb-3">
+      {/* ヘッダー + サマリー */}
+      <div className="px-3 py-2.5 bg-amber-500/8 border-b border-amber-500/10">
+        <div className="flex items-center gap-2 flex-wrap mb-1.5">
+          <span className="text-amber-300/90 text-xs font-bold">🎯 AIおすすめ買い目</span>
+          {buyCount > 0 ? (
+            <span className="text-[10px] font-bold border border-green-400/35 text-green-400 px-1.5 py-0.5 rounded">
+              買い {buyCount}件
+            </span>
+          ) : (
+            <span className="text-red-400/60 text-[10px] border border-red-400/20 px-1.5 py-0.5 rounded">
+              全見送り
+            </span>
+          )}
+        </div>
+        <p className="text-white/55 text-xs leading-relaxed">{rec.summary}</p>
+      </div>
+
+      {/* 出走馬ロール */}
+      <div className="px-3 pt-2.5">
+        <span className="text-white/30 text-[10px] font-medium tracking-wider uppercase">出走馬評価</span>
+      </div>
+      <div className="px-3 pt-2 pb-2.5 grid grid-cols-2 gap-2">
+        {rec.roles.map(horse => (
+          <RoleHorseCard key={horse.name} horse={horse} />
+        ))}
+      </div>
+
+      {/* 推奨馬券 */}
+      <div className="px-3 border-t border-white/5 pt-2.5">
+        <span className="text-white/30 text-[10px] font-medium tracking-wider uppercase">推奨馬券</span>
+      </div>
+      <div className="px-3 pt-2 pb-3 space-y-2">
+        {rec.bets.map((bet, i) => (
+          <AiRecBetRow key={i} bet={bet} race={race} onRecorded={onRecorded} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ---- レースカード ----
 function RaceCard({ race, labelRoi }: { race: Race; labelRoi?: Map<string, number> }) {
   const [recorded, setRecorded] = useState(0)
@@ -1134,7 +1383,16 @@ function RaceCard({ race, labelRoi }: { race: Race; labelRoi?: Map<string, numbe
         )}
       </div>
 
-      {/* 買い目提案 */}
+      {/* AIおすすめ買い目 */}
+      {race.aiRecommendation && (
+        <AiRecommendationPanel
+          rec={race.aiRecommendation}
+          race={race}
+          onRecorded={() => setRecorded(n => n + 1)}
+        />
+      )}
+
+      {/* 買い目提案（旧ロジック） */}
       {race.optimizedBets && race.optimizedBets.length > 0 && (
         <OptimizedBetsPanel
           bets={race.optimizedBets}
