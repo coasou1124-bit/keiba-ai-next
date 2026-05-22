@@ -1,5 +1,7 @@
+import { createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { recalcLearningStats } from '@/lib/learningStats'
 import {
   normalizeDate, normalizeRacecourse, normalizeSurface, normalizeTrackCondition,
   normalizeRunningStyle, normalizeWeather, normalizeOdds, normalizeInt,
@@ -229,8 +231,21 @@ export async function GET() {
 // POST: import CSV
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json() as { csv?: string }
+    const body = await req.json() as { csv?: string; fileName?: string }
     if (!body.csv?.trim()) return NextResponse.json({ error: 'CSVデータが空です' }, { status: 400 })
+
+    const fileName = body.fileName?.trim() || 'unknown.csv'
+    const fileHash = createHash('sha256').update(body.csv).digest('hex')
+
+    // 二重インポート防止チェック（成功済みのみ対象）
+    const dup = await prisma.importHistory.findFirst({ where: { fileHash, success: true } })
+    if (dup) {
+      const dt = new Date(dup.importedAt).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
+      return NextResponse.json(
+        { error: `このファイルは既にインポート済みです（${dt}）` },
+        { status: 409 }
+      )
+    }
 
     let rows: Record<string, string>[]
     try {
@@ -309,6 +324,20 @@ export async function POST(req: NextRequest) {
     }
     if (warnings.length > 0) message += `（自動補正 ${warnings.length}件）`
 
+    // インポート履歴を記録
+    await prisma.importHistory.create({
+      data: {
+        fileName,
+        raceDate: raceGroups[0]?.raceDate ?? '',
+        count: totalHorses,
+        success: true,
+        fileHash,
+      },
+    })
+
+    // 学習統計を自動再計算（決済済み Bet がなければ 0 件で正常終了）
+    const statsUpdated = await recalcLearningStats()
+
     return NextResponse.json({
       success: true,
       message,
@@ -318,6 +347,7 @@ export async function POST(req: NextRequest) {
       horses: totalHorses,
       warnings: warnings.slice(0, 10),
       issues: issues.slice(0, 30),
+      statsUpdated,
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'インポートに失敗しました'
