@@ -1,3 +1,4 @@
+
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x"]
@@ -70,4 +71,33 @@ model ImportedHorse {
   weightCarried Float        @default(0)
   horseSex      String       @default("")
   horseAge      Int          @default(0)
+}
+
+// CSVインポート履歴・二重インポート防止
+model ImportHistory {
+  id         String   @id @default(cuid())
+  importedAt DateTime @default(now())
+  fileName   String
+  raceDate   String
+  count      Int
+  success    Boolean
+  fileHash   String   @unique
+}
+
+// セグメント別学習統計（CSVインポート後に自動再計算）
+model LearningStat {
+  id              String   @id @default(cuid())
+  venue           String   @default("")
+  surface         String   @default("")
+  distance        Int      @default(0)
+  betType         String   @default("")
+  popularityRange String   @default("")
+  aiScoreRange    String   @default("")
+  winRate         Float    @default(0)
+  roi             Float    @default(0)
+  returnRateBonus Float    @default(0)
+  sampleCount     Int      @default(0)
+  updatedAt       DateTime @updatedAt
+
+  @@unique([venue, surface, distance, betType, popularityRange, aiScoreRange])
 }
