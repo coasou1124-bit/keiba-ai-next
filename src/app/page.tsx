@@ -14,6 +14,9 @@ interface Horse {
   style?: string
   popularity?: number
   aiScore?: number
+  rawAiScore?: number
+  aiScoreBonus?: number
+  aiScoreBonusReason?: string
 }
 
 interface HomeStat {
@@ -890,6 +893,47 @@ function MarketDivergencePanel({ result }: { result: MarketDivergenceResult }) {
   )
 }
 
+// ---- AI補正詳細パネル ----
+function AiCorrectionPanel({ horses }: { horses: Horse[] }) {
+  const corrected = horses.filter(h => h.aiScoreBonus !== undefined && h.aiScoreBonus !== 0)
+  if (corrected.length === 0) return null
+
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 mb-3">
+      <div className="flex items-center gap-2 mb-2.5">
+        <span className="text-white/50 text-xs font-medium">AI補正詳細</span>
+        <span className="text-white/25 text-[10px]">学習データによる補正値</span>
+      </div>
+      <div className="space-y-1.5">
+        {corrected.map(h => {
+          const raw    = h.rawAiScore ?? h.aiScore ?? 0
+          const bonus  = h.aiScoreBonus ?? 0
+          const after  = h.aiScore ?? 0
+          const reason = h.aiScoreBonusReason ?? ''
+          return (
+            <div key={h.name} className="flex items-center gap-2 text-xs flex-wrap">
+              <span className="text-white/70 font-medium w-20 truncate flex-shrink-0">{h.name}</span>
+              <span className="text-white/35 flex-shrink-0">
+                補正前 <span className="font-bold text-white/55">{raw >= 0 ? `+${raw}` : `${raw}`}</span>
+              </span>
+              <span className={`font-bold flex-shrink-0 ${bonus >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {bonus >= 0 ? `+${bonus}` : `${bonus}`}
+              </span>
+              <span className="text-white/25 flex-shrink-0">→</span>
+              <span className={`font-bold flex-shrink-0 ${after >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {after >= 0 ? `+${after}` : `${after}`}
+              </span>
+              {reason && (
+                <span className="text-white/25 text-[10px] flex-shrink-0">{reason}</span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ---- レースカード ----
 function RaceCard({ race, labelRoi }: { race: Race; labelRoi?: Map<string, number> }) {
   const [recorded, setRecorded] = useState(0)
@@ -1029,6 +1073,9 @@ function RaceCard({ race, labelRoi }: { race: Race; labelRoi?: Map<string, numbe
       {race.marketDivergenceResult && (
         <MarketDivergencePanel result={race.marketDivergenceResult} />
       )}
+
+      {/* AI補正詳細（学習データあり時のみ表示） */}
+      {race.horses && <AiCorrectionPanel horses={race.horses} />}
 
       {/* ルールベース簡易コメント */}
       {race.aiComment && !raceComment && (

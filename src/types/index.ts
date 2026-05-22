@@ -100,6 +100,9 @@ export interface Horse {
   marketLabel: MarketLabel
   aiScore: number
   aiComment?: string
+  rawAiScore?: number
+  aiScoreBonus?: number
+  aiScoreBonusReason?: string
 }
 
 export interface Pick {
