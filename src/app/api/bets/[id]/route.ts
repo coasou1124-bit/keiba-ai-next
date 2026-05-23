@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { recalcLearningStats } from '@/lib/learningStats'
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const body = await req.json()
@@ -27,5 +28,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       memo: memo !== undefined ? String(memo) : undefined,
     },
   })
+
+  // 結果確定時にLearningStat自動再計算（fire-and-forget）
+  if (isHit !== null) {
+    recalcLearningStats().catch(console.error)
+  }
+
   return NextResponse.json({ bet })
 }

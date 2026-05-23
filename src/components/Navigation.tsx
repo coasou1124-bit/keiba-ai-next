@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 const NAV_ITEMS = [
   { href: '/', label: 'ホーム', icon: '🏇' },
   { href: '/results', label: '結果入力', icon: '📝' },
+  { href: '/dashboard', label: '分析', icon: '📈' },
   { href: '/stats', label: '統計', icon: '📊' },
   { href: '/import', label: 'CSV取込', icon: '📂' },
   { href: '/n8n', label: 'n8n連携', icon: '⚡' },
