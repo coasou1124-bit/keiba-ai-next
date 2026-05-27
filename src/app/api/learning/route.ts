@@ -3,7 +3,19 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { computeLearningModel } from '@/lib/learningModel'
+import { recalcLearningStats } from '@/lib/learningStats'
 import type { LearningBetInput } from '@/lib/learningModel'
+
+// POST /api/learning  ← LearningStat を手動で再計算する
+export async function POST() {
+  try {
+    const count = await recalcLearningStats()
+    return NextResponse.json({ ok: true, updatedSegments: count })
+  } catch (e) {
+    console.error(e)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
 
 export async function GET(req: NextRequest) {
   try {

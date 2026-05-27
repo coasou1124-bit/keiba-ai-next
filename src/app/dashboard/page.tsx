@@ -38,6 +38,21 @@ interface StatsData {
   monthly: MonthlyStat[]
 }
 
+interface AiScoreGroup {
+  label: string
+  rangeLabel: string
+  range: [number, number]
+  count: number
+  winCount: number
+  winRate: number
+  totalStake: number
+  totalPayout: number
+  returnRate: number
+  profit: number
+  bonus: number
+  sampleCount: number
+}
+
 interface LearningStatRow {
   id: string
   venue: string
@@ -245,19 +260,35 @@ function CorrectionTable({ section }: { section: CorrSection }) {
 export default function DashboardPage() {
   const [stats, setStats] = useState<StatsData | null>(null)
   const [learningStats, setLearningStats] = useState<LearningStatRow[]>([])
+  const [aiScoreGroups, setAiScoreGroups] = useState<AiScoreGroup[]>([])
   const [loading, setLoading] = useState(true)
+  const [recalcing, setRecalcing] = useState(false)
 
-  useEffect(() => {
+  const fetchAll = () =>
     Promise.all([
       fetch('/api/stats').then(r => r.ok ? r.json() : null),
       fetch('/api/learning?format=raw').then(r => r.ok ? r.json() : []),
-    ])
-      .then(([s, ls]) => {
-        if (s) setStats(s as StatsData)
-        if (Array.isArray(ls)) setLearningStats(ls as LearningStatRow[])
-      })
-      .finally(() => setLoading(false))
+      fetch('/api/dashboard/ai-score').then(r => r.ok ? r.json() : { groups: [] }),
+    ]).then(([s, ls, aiData]) => {
+      if (s) setStats(s as StatsData)
+      if (Array.isArray(ls)) setLearningStats(ls as LearningStatRow[])
+      if (Array.isArray(aiData?.groups)) setAiScoreGroups(aiData.groups as AiScoreGroup[])
+    })
+
+  useEffect(() => {
+    fetchAll().finally(() => setLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const handleRecalc = async () => {
+    setRecalcing(true)
+    try {
+      await fetch('/api/learning', { method: 'POST' })
+      await fetchAll()
+    } finally {
+      setRecalcing(false)
+    }
+  }
 
   // ---- データ導出 ----
   const honmeiStat = stats?.byAiRank?.find(s => s.label === 'AI1位')
@@ -391,7 +422,107 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {/* セクション4: AI補正前後比較 */}
+      {/* セクション4: AIスコア別 回収率分析 */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-amber-400 font-bold text-lg">AIスコア別 回収率分析</h2>
+            <p className="text-white/35 text-xs mt-0.5">
+              補正値 = 回収率実績から計算した次回AIスコアへの加減算（最大±10、5件未満は補正なし）
+            </p>
+          </div>
+          <button
+            onClick={handleRecalc}
+            disabled={recalcing}
+            className="text-xs px-3 py-1.5 rounded-lg border border-amber-400/40 text-amber-400/80 hover:bg-amber-400/10 disabled:opacity-40 transition-colors"
+          >
+            {recalcing ? '再計算中…' : '補正値を再計算'}
+          </button>
+        </div>
+
+        {aiScoreGroups.some(g => g.count > 0) ? (
+          <div className="bg-white/5 border border-white/10 rounded-xl overflow-x-auto">
+            <table className="w-full text-xs min-w-[640px]">
+              <thead>
+                <tr className="border-b border-white/10">
+                  <th className="text-left px-3 py-2.5 text-white/40 font-medium">スコア帯</th>
+                  <th className="text-right px-3 py-2.5 text-white/40 font-medium">件数</th>
+                  <th className="text-right px-3 py-2.5 text-white/40 font-medium">的中</th>
+                  <th className="text-right px-3 py-2.5 text-white/40 font-medium">勝率</th>
+                  <th className="text-right px-3 py-2.5 text-white/40 font-medium">投資額</th>
+                  <th className="text-right px-3 py-2.5 text-white/40 font-medium">回収率</th>
+                  <th className="text-right px-3 py-2.5 text-white/40 font-medium">収支</th>
+                  <th className="text-right px-3 py-2.5 text-amber-400/60 font-medium">補正値</th>
+                  <th className="text-center px-3 py-2.5 text-amber-400/60 font-medium">次回AIへの影響</th>
+                </tr>
+              </thead>
+              <tbody>
+                {aiScoreGroups.map((g, i) => {
+                  const hasBonus = g.sampleCount >= 5
+                  return (
+                    <tr key={i} className="border-t border-white/5 hover:bg-white/5 transition-colors">
+                      <td className="px-3 py-2.5">
+                        <span className="text-white/80 font-medium bg-white/10 px-2 py-0.5 rounded text-xs whitespace-nowrap">
+                          {g.label}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-right text-white/60 tabular-nums">{g.count}</td>
+                      <td className="px-3 py-2.5 text-right text-white/60 tabular-nums">{g.winCount}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums font-medium text-white/70">
+                        {g.winRate}%
+                      </td>
+                      <td className="px-3 py-2.5 text-right text-white/50 tabular-nums">
+                        {g.totalStake.toLocaleString()}円
+                      </td>
+                      <td className={`px-3 py-2.5 text-right font-bold tabular-nums ${rateColor(g.returnRate)}`}>
+                        {g.returnRate}%
+                      </td>
+                      <td className={`px-3 py-2.5 text-right font-bold tabular-nums ${g.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {g.profit >= 0 ? '+' : ''}{g.profit.toLocaleString()}円
+                      </td>
+                      <td className={`px-3 py-2.5 text-right font-bold tabular-nums ${
+                        !hasBonus ? 'text-white/25'
+                          : g.bonus > 0 ? 'text-green-400'
+                          : g.bonus < 0 ? 'text-red-400'
+                          : 'text-white/30'
+                      }`}>
+                        {!hasBonus
+                          ? <span title={`${g.count}件（5件未満のため補正なし）`}>—</span>
+                          : g.bonus > 0 ? `+${g.bonus}` : g.bonus === 0 ? '±0' : `${g.bonus}`
+                        }
+                      </td>
+                      <td className="px-3 py-2.5 text-center">
+                        {!hasBonus ? (
+                          <span className="text-white/20 text-[10px]">データ不足</span>
+                        ) : g.bonus >= 5 ? (
+                          <span className="text-green-400 font-bold text-xs">↑↑ 大幅加算</span>
+                        ) : g.bonus > 0 ? (
+                          <span className="text-green-400 text-xs">↑ 加算</span>
+                        ) : g.bonus <= -5 ? (
+                          <span className="text-red-400 font-bold text-xs">↓↓ 大幅減算</span>
+                        ) : g.bonus < 0 ? (
+                          <span className="text-red-400 text-xs">↓ 減算</span>
+                        ) : (
+                          <span className="text-white/25 text-xs">→ 補正なし</span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
+            <p className="text-white/40 text-sm">まだデータがありません</p>
+            <p className="text-white/25 text-xs mt-1">
+              結果入力済みの馬券が記録されるとスコア別の回収率と補正値が表示されます
+            </p>
+          </div>
+        )}
+      </section>
+
+      {/* セクション6: AI補正前後比較 */}
       <section className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <h2 className="text-amber-400 font-bold text-lg">AI補正効果</h2>

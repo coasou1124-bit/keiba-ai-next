@@ -101,3 +101,134 @@ model LearningStat {
 
   @@unique([venue, surface, distance, betType, popularityRange, aiScoreRange])
 }
+
+// ─────────────────────────────────────────────────────────────
+// Supabase 中心構成用テーブル（n8n連携・AI予測・アラート）
+// ─────────────────────────────────────────────────────────────
+
+// レース情報（n8n または CSV インポートで保存）
+model Race {
+  id             String         @id @default(cuid())
+  raceDate       String
+  venue          String
+  raceNumber     Int
+  raceName       String         @default("")
+  distance       Int            @default(0)
+  surface        String         @default("")
+  trackCondition String         @default("")
+  weather        String         @default("")
+  grade          String         @default("")
+  prizeMoney     Int            @default(0)
+  createdAt      DateTime            @default(now())
+  horses         RaceHorse[]
+  oddsLogs       OddsLog[]
+  predictions    AiPrediction[]
+  alerts         Alert[]
+  eliminations   HorseElimination[]
+
+  @@unique([raceDate, venue, raceNumber])
+  @@map("races")
+}
+
+// 出走馬（Race に紐づく）
+model RaceHorse {
+  id            String         @id @default(cuid())
+  raceId        String
+  race          Race           @relation(fields: [raceId], references: [id], onDelete: Cascade)
+  horseName     String
+  horseNumber   Int
+  frameNumber   Int            @default(0)
+  jockeyName    String         @default("")
+  trainerName   String         @default("")
+  weight        Int            @default(0)
+  weightChange  Int            @default(0)
+  age           Int            @default(0)
+  sex           String         @default("")
+  popularity    Int            @default(0)
+  winOdds       Float          @default(0)
+  placeOdds     Float          @default(0)
+  runningStyle  String         @default("")
+  finalPosition Int            @default(0)
+  createdAt     DateTime       @default(now())
+  oddsLogs      OddsLog[]
+  predictions   AiPrediction[]
+  alerts        Alert[]
+  eliminations  HorseElimination[]
+
+  @@unique([raceId, horseNumber])
+  @@map("race_horses")
+}
+
+// オッズ時系列ログ（急変検知用・30分ごとに n8n が記録）
+model OddsLog {
+  id         String    @id @default(cuid())
+  raceId     String
+  race       Race      @relation(fields: [raceId], references: [id], onDelete: Cascade)
+  horseId    String
+  horse      RaceHorse @relation(fields: [horseId], references: [id], onDelete: Cascade)
+  winOdds    Float
+  placeOdds  Float     @default(0)
+  recordedAt DateTime  @default(now())
+
+  @@map("odds_logs")
+}
+
+// AI 予測結果（n8n → OpenAI 分析後に保存）
+model AiPrediction {
+  id               String    @id @default(cuid())
+  raceId           String
+  race             Race      @relation(fields: [raceId], references: [id], onDelete: Cascade)
+  horseId          String
+  horse            RaceHorse @relation(fields: [horseId], references: [id], onDelete: Cascade)
+  aiScore          Int       @default(0)
+  evScore          Int       @default(0)
+  winProbability   Float     @default(0)
+  placeProbability Float     @default(0)
+  confidence       String    @default("medium") // high / medium / low
+  marketLabel      String    @default("")        // 本命候補 / 穴馬 / 過小評価 等
+  openaiComment    String    @default("")
+  modelVersion     String    @default("gpt-4o-mini")
+  rawResponse      Json?
+  createdAt        DateTime  @default(now())
+
+  @@unique([raceId, horseId])
+  @@map("ai_predictions")
+}
+
+// アラート（オッズ急変・AI推奨・穴馬検知 等）
+model Alert {
+  id            String     @id @default(cuid())
+  raceId        String
+  race          Race       @relation(fields: [raceId], references: [id], onDelete: Cascade)
+  horseId       String?
+  horse         RaceHorse? @relation(fields: [horseId], references: [id])
+  alertType     String     // odds_drop / ai_pick / dark_horse / ev_spike / pre_race
+  severity      String     @default("medium")  // high / medium / low
+  title         String     @default("")
+  message       String     @default("")
+  discordSent   Boolean    @default(false)
+  discordSentAt DateTime?
+  data          Json?
+  createdAt     DateTime   @default(now())
+
+  @@map("alerts")
+}
+
+// 消去法AI判定（馬ごとのスコア・消し理由・妙味コメント）
+model HorseElimination {
+  id               String    @id @default(cuid())
+  raceId           String
+  race             Race      @relation(fields: [raceId], references: [id], onDelete: Cascade)
+  horseId          String
+  horse            RaceHorse @relation(fields: [horseId], references: [id], onDelete: Cascade)
+  aiScore          Int       @default(0)
+  survivalScore    Int       @default(0)      // 生存率 0〜100
+  decision         String    @default("HOLD") // KEEP / HOLD / ELIMINATE
+  eliminateReasons Json?                      // string[] 消し理由の配列
+  valueComment     String    @default("")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([raceId, horseId])
+  @@map("horse_eliminations")
+}
