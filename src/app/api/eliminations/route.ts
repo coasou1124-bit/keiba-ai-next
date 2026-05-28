@@ -45,24 +45,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'decision は KEEP / HOLD / ELIMINATE のいずれかです' }, { status: 400 })
     }
 
+    const aiScore      = Number(body.aiScore      ?? 0)
+    const survivalScore = Number(body.survivalScore ?? 0)
+    const valueComment  = body.valueComment ?? ''
+
+    let eliminateReasons = body.eliminateReasons ?? null
+    if (typeof eliminateReasons === 'string') {
+      try { eliminateReasons = JSON.parse(eliminateReasons) } catch { eliminateReasons = [] }
+    }
+
     const elimination = await prisma.horseElimination.upsert({
       where: { raceId_horseId: { raceId, horseId } },
-      update: {
-        aiScore:          body.aiScore          ?? 0,
-        survivalScore:    body.survivalScore     ?? 0,
-        decision,
-        eliminateReasons: body.eliminateReasons  ?? null,
-        valueComment:     body.valueComment      ?? '',
-      },
-      create: {
-        raceId,
-        horseId,
-        aiScore:          body.aiScore          ?? 0,
-        survivalScore:    body.survivalScore     ?? 0,
-        decision,
-        eliminateReasons: body.eliminateReasons  ?? null,
-        valueComment:     body.valueComment      ?? '',
-      },
+      update: { aiScore, survivalScore, decision, eliminateReasons, valueComment },
+      create: { raceId, horseId, aiScore, survivalScore, decision, eliminateReasons, valueComment },
     })
 
     return NextResponse.json({ elimination }, { status: 201 })
