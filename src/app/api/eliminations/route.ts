@@ -53,20 +53,12 @@ export async function POST(req: NextRequest) {
 
     const aiScore       = toInt(body.aiScore)
     const survivalScore = toInt(body.survivalScore)
-    const valueComment  = body.valueComment ?? ''
-
-    let eliminateReasons = body.eliminateReasons ?? null
-    if (typeof eliminateReasons === 'string') {
-      try { eliminateReasons = JSON.parse(eliminateReasons) } catch { eliminateReasons = [] }
-    }
-    if (!Array.isArray(eliminateReasons) && eliminateReasons !== null) {
-      eliminateReasons = []
-    }
+    const valueComment  = String(body.valueComment ?? '')
 
     const elimination = await prisma.horseElimination.upsert({
       where: { raceId_horseId: { raceId, horseId } },
-      update: { aiScore, survivalScore, decision, eliminateReasons, valueComment },
-      create: { raceId, horseId, aiScore, survivalScore, decision, eliminateReasons, valueComment },
+      update: { aiScore, survivalScore, decision, eliminateReasons: [], valueComment },
+      create: { raceId, horseId, aiScore, survivalScore, decision, eliminateReasons: [], valueComment },
     })
 
     return NextResponse.json({ elimination }, { status: 201 })
