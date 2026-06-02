@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: '/stats', label: '統計', icon: '📊' },
   { href: '/import', label: 'CSV取込', icon: '📂' },
   { href: '/n8n', label: 'n8n連携', icon: '⚡' },
+  { href: '/simple', label: 'シンプルAI', icon: '🤖' },
 ]
 
 export default function Navigation() {

@@ -19,6 +19,9 @@ prisma/dev.db-journal
 .DS_Store
 Thumbs.db
 
+# シンプルAI JSONストレージ（ローカルデータはコミットしない）
+data/races.json
+
 # CSV自動取り込みフォルダ（CSVファイル自体はコミットしない）
 watch-import/*.csv
 imported/*.csv
