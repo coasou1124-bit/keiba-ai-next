@@ -29,6 +29,28 @@ export interface BetSuggestion {
   reason: string
 }
 
+export interface StepDetail {
+  step: number
+  title: string
+  result: string
+  eliminates?: string[]
+}
+
+export interface StepAnalysis {
+  steps: StepDetail[]
+  worthBuying: boolean
+  honmei: string[]
+  anaume: string[]
+  ooana: string[]
+  kikenNinkiba: string[]
+  keshima: string[]
+  kaime: BetSuggestion[]
+  oddsMerit: string
+  confidence: number
+  miokuriReason: string
+  analyzedAt: string
+}
+
 export interface RaceAnalysis {
   horses: HorseAnalysis[]
   honmei: string[]
@@ -60,6 +82,7 @@ export interface LocalRace {
   trackCondition: string
   horses: LocalHorse[]
   analysis?: RaceAnalysis
+  stepAnalysis?: StepAnalysis
   result?: RaceResult
   createdAt: string
 }

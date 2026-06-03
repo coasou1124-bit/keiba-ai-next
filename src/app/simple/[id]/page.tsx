@@ -18,11 +18,20 @@ interface RaceAnalysis {
   horses: HorseAnalysis[]; honmei: string[]; anaume: string[]; kiken: string[]
   kaime: BetSuggestion[]; miokuri: boolean; overallComment: string; analyzedAt: string
 }
+interface StepDetail { step: number; title: string; result: string; eliminates?: string[] }
+interface StepAnalysis {
+  steps: StepDetail[]
+  worthBuying: boolean
+  honmei: string[]; anaume: string[]; ooana: string[]
+  kikenNinkiba: string[]; keshima: string[]
+  kaime: BetSuggestion[]
+  oddsMerit: string; confidence: number; miokuriReason: string; analyzedAt: string
+}
 interface RaceResult { isHit: boolean; stake: number; payout: number; profit: number; memo: string; recordedAt: string }
 interface LocalRace {
   id: string; raceDate: string; venue: string; raceNumber: number; raceName: string
   distance: number; surface: string; trackCondition: string; horses: LocalHorse[]
-  analysis?: RaceAnalysis; result?: RaceResult; createdAt: string
+  analysis?: RaceAnalysis; stepAnalysis?: StepAnalysis; result?: RaceResult; createdAt: string
 }
 
 const D_STYLE: Record<Decision, { badge: string; row: string; label: string }> = {
@@ -46,6 +55,9 @@ export default function RaceDetailPage({ params }: { params: { id: string } }) {
   const [race, setRace] = useState<LocalRace | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [analyzeError, setAnalyzeError] = useState('')
+  const [step7Analyzing, setStep7Analyzing] = useState(false)
+  const [step7Error, setStep7Error] = useState('')
+  const [openSteps, setOpenSteps] = useState<number[]>([])
   const [resultForm, setResultForm] = useState({ isHit: false, stake: 1000, payout: 0, memo: '' })
   const [savingResult, setSavingResult] = useState(false)
 
@@ -74,6 +86,30 @@ export default function RaceDetailPage({ params }: { params: { id: string } }) {
     } finally {
       setAnalyzing(false)
     }
+  }
+
+  async function runStep7Analysis() {
+    setStep7Analyzing(true)
+    setStep7Error('')
+    try {
+      const res = await fetch('/api/analyze7', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ raceId: params.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setRace(data.race)
+      setOpenSteps([])
+    } catch (e) {
+      setStep7Error(e instanceof Error ? e.message : '分析に失敗しました')
+    } finally {
+      setStep7Analyzing(false)
+    }
+  }
+
+  function toggleStep(n: number) {
+    setOpenSteps(prev => prev.includes(n) ? prev.filter(x => x !== n) : [...prev, n])
   }
 
   async function saveResult() {
@@ -286,6 +322,153 @@ export default function RaceDetailPage({ params }: { params: { id: string } }) {
             </button>
           </div>
         </>
+      )}
+
+      {/* ─── 7ステップAI分析 ─── */}
+      {analysis && (
+        <div className="mb-6">
+          {!race.stepAnalysis ? (
+            <div className="bg-white/3 border border-white/10 rounded-xl p-6 text-center">
+              <div className="text-amber-400 font-bold text-base mb-1">7ステップAI分析</div>
+              <p className="text-white/50 text-sm mb-4">
+                トラックバイアス・展開・危険な人気馬・妙味まで7段階で深く分析します
+              </p>
+              {step7Error && <p className="text-red-400 text-sm mb-3">{step7Error}</p>}
+              <button
+                onClick={runStep7Analysis}
+                disabled={step7Analyzing}
+                className="px-8 py-3 bg-violet-600 text-white font-bold rounded-lg hover:bg-violet-500 transition disabled:opacity-50 disabled:cursor-wait"
+              >
+                {step7Analyzing ? '7ステップ分析中...' : '7ステップAI分析を実行する'}
+              </button>
+            </div>
+          ) : (
+            <div className="border border-violet-500/30 rounded-xl overflow-hidden">
+              {/* ヘッダー */}
+              <div className="bg-violet-500/10 px-5 py-4 flex items-center justify-between">
+                <div>
+                  <span className="text-violet-300 font-bold">7ステップAI分析</span>
+                  <span className={`ml-3 text-sm font-bold px-2.5 py-0.5 rounded-full ${race.stepAnalysis.worthBuying ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
+                    {race.stepAnalysis.worthBuying ? '買い推奨' : '見送り推奨'}
+                  </span>
+                  <span className="ml-2 text-white/40 text-xs">自信度 {race.stepAnalysis.confidence}%</span>
+                </div>
+                <button
+                  onClick={runStep7Analysis}
+                  disabled={step7Analyzing}
+                  className="text-white/30 hover:text-white/60 text-xs border border-white/10 px-3 py-1.5 rounded-lg transition disabled:opacity-30"
+                >
+                  {step7Analyzing ? '分析中...' : '再実行'}
+                </button>
+              </div>
+
+              {/* ステップ一覧 */}
+              <div className="divide-y divide-white/5">
+                {race.stepAnalysis.steps.map(s => {
+                  const isOpen = openSteps.includes(s.step)
+                  const stepColors = ['', 'bg-blue-500/10', 'bg-purple-500/10', 'bg-red-500/10', 'bg-orange-500/10', 'bg-yellow-500/10', 'bg-green-500/10', 'bg-amber-500/10']
+                  const stepTextColors = ['', 'text-blue-300', 'text-purple-300', 'text-red-300', 'text-orange-300', 'text-yellow-300', 'text-green-300', 'text-amber-300']
+                  return (
+                    <div key={s.step} className={`${stepColors[s.step]}`}>
+                      <button
+                        onClick={() => toggleStep(s.step)}
+                        className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-white/3 transition"
+                      >
+                        <span className={`text-xs font-bold w-14 shrink-0 ${stepTextColors[s.step]}`}>
+                          STEP{s.step}
+                        </span>
+                        <span className="text-white/70 text-sm flex-1">{s.title}</span>
+                        {s.eliminates && s.eliminates.length > 0 && (
+                          <span className="text-red-400 text-xs shrink-0">{s.eliminates.length}頭消し</span>
+                        )}
+                        <span className="text-white/30 text-xs">{isOpen ? '▲' : '▼'}</span>
+                      </button>
+                      {isOpen && (
+                        <div className="px-5 pb-3">
+                          <p className="text-white/80 text-sm leading-relaxed">{s.result}</p>
+                          {s.eliminates && s.eliminates.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {s.eliminates.map(name => (
+                                <span key={name} className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-300">
+                                  ✕ {name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* 最終判定 */}
+              <div className="bg-white/3 px-5 py-5 border-t border-white/10">
+                <h3 className="text-white/60 text-xs font-semibold uppercase tracking-wide mb-4">最終判定</h3>
+
+                {/* 馬の分類 */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
+                  {[
+                    { label: '◎ 本命候補', names: race.stepAnalysis.honmei, cls: 'border-emerald-500/30 bg-emerald-500/5', nameCls: 'text-emerald-400' },
+                    { label: '○ 穴候補', names: race.stepAnalysis.anaume, cls: 'border-amber-500/30 bg-amber-500/5', nameCls: 'text-amber-400' },
+                    { label: '△ 大穴候補', names: race.stepAnalysis.ooana, cls: 'border-yellow-500/30 bg-yellow-500/5', nameCls: 'text-yellow-300' },
+                    { label: '⚠ 危険な人気馬', names: race.stepAnalysis.kikenNinkiba, cls: 'border-orange-500/30 bg-orange-500/5', nameCls: 'text-orange-400' },
+                    { label: '✕ 消し馬', names: race.stepAnalysis.keshima, cls: 'border-red-500/30 bg-red-500/5', nameCls: 'text-red-400' },
+                  ].map(({ label, names, cls, nameCls }) => (
+                    <div key={label} className={`border rounded-lg p-3 ${cls}`}>
+                      <div className="text-white/40 text-xs mb-1.5">{label}</div>
+                      {names.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {names.map(n => (
+                            <span key={n} className={`text-sm font-bold ${nameCls}`}>{n}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-white/20 text-xs">なし</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* 推奨馬券 */}
+                {race.stepAnalysis.kaime.length > 0 && (
+                  <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4 mb-4">
+                    <div className="text-amber-400 text-xs font-semibold mb-2">推奨馬券</div>
+                    <div className="space-y-1.5">
+                      {race.stepAnalysis.kaime.map((k, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm flex-wrap">
+                          <span className="text-amber-400 font-bold px-2 py-0.5 bg-amber-500/10 rounded text-xs">{k.betType}</span>
+                          <span className="text-white">{k.horses.join(' → ')}</span>
+                          <span className="text-white/40 text-xs">{k.reason}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* オッズ妙味 + 見送り理由 */}
+                <div className="flex flex-col gap-2">
+                  {race.stepAnalysis.oddsMerit && (
+                    <div className="flex items-start gap-2 text-sm">
+                      <span className="text-amber-400 text-xs shrink-0 mt-0.5">オッズ妙味</span>
+                      <span className="text-white/70">{race.stepAnalysis.oddsMerit}</span>
+                    </div>
+                  )}
+                  {!race.stepAnalysis.worthBuying && race.stepAnalysis.miokuriReason && (
+                    <div className="flex items-start gap-2 text-sm">
+                      <span className="text-red-400 text-xs shrink-0 mt-0.5">見送り理由</span>
+                      <span className="text-white/60">{race.stepAnalysis.miokuriReason}</span>
+                    </div>
+                  )}
+                </div>
+
+                <p className="text-white/20 text-xs mt-3">
+                  分析時刻: {new Date(race.stepAnalysis.analyzedAt).toLocaleString('ja-JP')}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* 結果登録 */}
