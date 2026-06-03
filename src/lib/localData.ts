@@ -11,6 +11,10 @@ export interface LocalHorse {
   winOdds: number
   jockeyName: string
   runningStyle: string
+  frameNumber?: number
+  stableComment?: string
+  newspaperMark?: string
+  lastRaceInfo?: string
 }
 
 export interface HorseAnalysis {
@@ -80,6 +84,8 @@ export interface LocalRace {
   distance: number
   surface: string
   trackCondition: string
+  weather?: string
+  trackBiasNote?: string
   horses: LocalHorse[]
   analysis?: RaceAnalysis
   stepAnalysis?: StepAnalysis

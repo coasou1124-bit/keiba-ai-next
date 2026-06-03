@@ -8,6 +8,7 @@ type Decision = 'KEEP' | 'HOLD' | 'ELIMINATE'
 interface LocalHorse {
   horseNumber: number; horseName: string; popularity: number; winOdds: number
   jockeyName: string; runningStyle: string
+  frameNumber?: number; stableComment?: string; newspaperMark?: string; lastRaceInfo?: string
 }
 interface HorseAnalysis {
   horseNumber: number; horseName: string; aiScore: number; survivalScore: number
@@ -31,6 +32,7 @@ interface RaceResult { isHit: boolean; stake: number; payout: number; profit: nu
 interface LocalRace {
   id: string; raceDate: string; venue: string; raceNumber: number; raceName: string
   distance: number; surface: string; trackCondition: string; horses: LocalHorse[]
+  weather?: string; trackBiasNote?: string
   analysis?: RaceAnalysis; stepAnalysis?: StepAnalysis; result?: RaceResult; createdAt: string
 }
 
@@ -150,8 +152,13 @@ export default function RaceDetailPage({ params }: { params: { id: string } }) {
             {race.raceName && <span className="text-white/60 text-base ml-2">{race.raceName}</span>}
           </h1>
           <p className="text-white/40 text-sm">
-            {race.surface}{race.distance}m / 馬場:{race.trackCondition} / {race.horses.length}頭立て
+            {race.surface}{race.distance}m / 馬場:{race.trackCondition}
+            {race.weather && ` / 天候:${race.weather}`}
+            {' / '}{race.horses.length}頭立て
           </p>
+          {race.trackBiasNote && (
+            <p className="text-amber-400/70 text-xs mt-0.5">バイアス: {race.trackBiasNote}</p>
+          )}
         </div>
       </div>
 
@@ -162,12 +169,12 @@ export default function RaceDetailPage({ params }: { params: { id: string } }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-white/40 text-xs border-b border-white/10">
+                <th className="text-left py-2 w-8">枠</th>
                 <th className="text-left py-2 w-10">馬番</th>
                 <th className="text-left py-2">馬名</th>
                 <th className="text-left py-2 w-14">人気</th>
-                <th className="text-left py-2 w-16">単勝</th>
-                <th className="text-left py-2">騎手</th>
-                <th className="text-left py-2 w-16">脚質</th>
+                <th className="text-left py-2 w-14">単勝</th>
+                <th className="text-left py-2 w-14">脚質</th>
                 {analysis && <th className="text-left py-2 w-24">AI判定</th>}
               </tr>
             </thead>
@@ -176,12 +183,30 @@ export default function RaceDetailPage({ params }: { params: { id: string } }) {
                 const ha = analysis?.horses.find(x => x.horseNumber === h.horseNumber)
                 return (
                   <tr key={h.horseNumber} className={ha ? D_STYLE[ha.decision].row : ''}>
+                    <td className="py-2 text-white/40 text-xs">{h.frameNumber ?? '—'}</td>
                     <td className="py-2 text-white/60">{h.horseNumber}</td>
-                    <td className="py-2 text-white font-medium">{h.horseName}</td>
-                    <td className="py-2 text-white/60">{h.popularity}番人気</td>
-                    <td className="py-2 text-amber-400">{h.winOdds}倍</td>
-                    <td className="py-2 text-white/50">{h.jockeyName || '—'}</td>
-                    <td className="py-2 text-white/50">{h.runningStyle || '—'}</td>
+                    <td className="py-2">
+                      <div className="flex items-center gap-1.5">
+                        {h.newspaperMark && (
+                          <span className="text-amber-400 font-bold text-sm w-4 shrink-0">{h.newspaperMark}</span>
+                        )}
+                        <div className="min-w-0">
+                          <span className="text-white font-medium">{h.horseName}</span>
+                          {h.jockeyName && (
+                            <span className="text-white/40 text-xs ml-1.5">{h.jockeyName}</span>
+                          )}
+                          {h.stableComment && (
+                            <div className="text-white/30 text-xs truncate max-w-[180px]">厩:{h.stableComment}</div>
+                          )}
+                          {h.lastRaceInfo && (
+                            <div className="text-white/25 text-xs truncate max-w-[180px]">前:{h.lastRaceInfo}</div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-2 text-white/60 text-sm">{h.popularity}人気</td>
+                    <td className="py-2 text-amber-400 text-sm">{h.winOdds}倍</td>
+                    <td className="py-2 text-white/50 text-sm">{h.runningStyle || '—'}</td>
                     {analysis && ha && (
                       <td className="py-2">
                         <span className={`text-xs px-2 py-0.5 rounded-full border ${D_STYLE[ha.decision].badge}`}>
